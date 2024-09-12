@@ -34,7 +34,7 @@ namespace Identity.API.Controllers
                 Password = BCrypt.Net.BCrypt.HashPassword(body.NewPassword)
             };
 
-            return Created("success", _repository.Register(user,credential));
+            return Created("success", _repository.RegisterAsync(user,credential));
         }
 
         [HttpPost("login")]

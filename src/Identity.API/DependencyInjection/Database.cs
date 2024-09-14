@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MyApp.Identity.Infrastructure;
+﻿using Identity.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.API.DependencyInjection
 {
@@ -9,7 +9,7 @@ namespace Identity.API.DependencyInjection
         {
             services.AddDbContext<DataContext>(options => 
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection"), 
-                b => b.MigrationsAssembly(typeof(Program).Assembly.FullName)),ServiceLifetime.Scoped);
+                b => b.MigrationsAssembly(typeof(Program).Assembly.FullName)));
 
             return services;
         }

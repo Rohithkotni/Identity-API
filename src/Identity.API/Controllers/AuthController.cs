@@ -4,94 +4,92 @@ using Identity.Services;
 using Microsoft.AspNetCore.Mvc;
 using Identity.Repositories;
 
-namespace Identity.API.Controllers
+namespace Identity.API.Controllers;
+
+public class AuthController(IUserRepository repository, JwtService jwtService) : Controller
 {
-    public class AuthController : Controller
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegistrationDto body)
     {
-        private readonly IUserRepository _repository;
-        private readonly JwtService _jwtService;
-        public AuthController(IUserRepository repository, JwtService jwtService)
+        if (IsExistingUser(body.EmailAddress))
         {
-            _repository = repository;
-            _jwtService = jwtService;
+            return BadRequest(new { message = "Email already exists!" });
         }
-
-        [HttpPost("register")]
-        public IActionResult Register([FromBody] RegistrationDto body)
+        var user = new Registration
         {
-            var user = new Registration
-            {
-                FirstName = body.FirstName,
-                LastName = body.LastName,
-                EmailAddress = body.EmailAddress,
-                PhoneNumber = body.PhoneNumber,
-                EmailOptIn = body.EmailOptIn,
-                TextOptIn = body.TextOptIn
-            };
-            var credential = new Credential
-            {
-                EmailAddress = body.EmailAddress,
-                Password = BCrypt.Net.BCrypt.HashPassword(body.NewPassword)
-            };
-
-            return Created("success", _repository.RegisterAsync(user,credential));
-        }
-
-        [HttpPost("login")]
-        public IActionResult Login(Credential dto)
+            FirstName = body.FirstName,
+            LastName = body.LastName,
+            EmailAddress = body.EmailAddress,
+            PhoneNumber = body.PhoneNumber,
+            EmailOptIn = body.EmailOptIn,
+            TextOptIn = body.TextOptIn
+        };
+        var credential = new Credential
         {
-            var user = _repository.GetByEmail(dto.EmailAddress);
+            EmailAddress = body.EmailAddress,
+            Password = BCrypt.Net.BCrypt.HashPassword(body.NewPassword)
+        };
 
-            if (user.Result == null) return BadRequest(new { message = "Invalid Credentials" });
+        return Created("success", await repository.RegisterAsync(user,credential));
+    }
 
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Result.Password))
-            {
-                return BadRequest(new { message = "Invalid Credentials" });
-            }
-            var details=_repository.GetCustomer(dto.EmailAddress);
-            var jwt = _jwtService.Generate(user.Id);
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(Credential dto)
+    {
+        var user = await repository.Authenticate(dto.EmailAddress);
 
-            Response.Cookies.Append("jwt", jwt, new CookieOptions
-            {
-                HttpOnly = true
-            });
-
-            return Ok(new
-            {
-                message = "success"
-            });
-        }
-
-        [HttpGet("user")]
-        public IActionResult User()
+        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
         {
-            try
-            {
-                var jwt = Request.Cookies["jwt"];
-
-                var token = _jwtService.Verify(jwt);
-
-                int userId = int.Parse(token.Issuer);
-
-                var user = _repository.GetById(userId);
-
-                return Ok(user);
-            }
-            catch (Exception)
-            {
-                return Unauthorized();
-            }
+            return BadRequest(new { message = "Invalid Credentials" });
         }
+        var customer=await repository.GetCustomer(dto.EmailAddress);
+       // var jwt = jwtService.Generate();
 
-        [HttpPost("logout")]
-        public IActionResult Logout()
+        // Response.Cookies.Append("jwt", jwt, new CookieOptions
+        // {
+        //     HttpOnly = true
+        // });
+
+        return Ok(new
         {
-            Response.Cookies.Delete("jwt");
+            message = "success"
+        });
+    }
 
-            return Ok(new
-            {
-                message = "success"
-            });
+    [HttpGet("user")]
+    public IActionResult User()
+    {
+        try
+        {
+            var jwt = Request.Cookies["jwt"];
+
+            var token = jwtService.Verify(jwt);
+
+            int userId = int.Parse(token.Issuer);
+
+           // var user = repository.GetById(userId);
+
+            return Ok();
         }
+        catch (Exception)
+        {
+            return Unauthorized();
+        }
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("jwt");
+
+        return Ok(new
+        {
+            message = "success"
+        });
+    }
+
+    public bool IsExistingUser(string email)
+    {
+        return repository.GetByEmail(email);
     }
 }

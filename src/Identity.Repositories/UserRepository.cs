@@ -1,36 +1,36 @@
 ﻿using Identity.Domain.Models;
 using Identity.Domain.RequestDTOs;
 using Identity.Domain.ResponseDTOs;
+using Identity.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using MyApp.Identity.Infrastructure;
+using AutoMapper;
 
 namespace Identity.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository(DataContext db) : IUserRepository
     {
-        private readonly DataContext db;
-        private readonly IServiceProvider serviceProvider;
+        private readonly DataContext _db = db;
 
-        public UserRepository(DataContext _db,IServiceProvider _serviceProvider)
+        public bool GetByEmail(string email)
         {
-            db = _db;
-            serviceProvider= _serviceProvider;
+            return _db.Registrations.Any(x => x.EmailAddress == email);
         }
 
-        public Task<CredentialDto> GetByEmail(string email)
+        public async Task<CustomerDto> GetCustomer(string emailAddress)
         {
-            throw new NotImplementedException();
+            var results = await _db.Registrations.Where(x => x.EmailAddress == emailAddress).FirstOrDefaultAsync();
+            return Mapper.Map<CustomerDto>(results);
         }
 
-        public object GetById(int userId)
+        public async Task<CredentialDto> Authenticate(string dtoEmailAddress)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<CustomerDto> GetCustomer(string emailAddress)
-        {
-            throw new NotImplementedException();
+           var result =await _db.Credentials.Where(x => x.EmailAddress == dtoEmailAddress).FirstOrDefaultAsync();
+           var customer = new CredentialDto()
+           {
+               EmailAddress = result.EmailAddress,
+               Password = result.Password
+           };
+           return customer;
         }
 
         public Task<AuthResponseDto> Login(CredentialDto credential)
@@ -40,46 +40,28 @@ namespace Identity.Repositories
 
         public async Task<int> RegisterAsync(Registration customer, Credential credential)
         {
-            if (customer == null) throw new ArgumentNullException(nameof(customer));
-            if (credential == null) throw new ArgumentNullException(nameof(credential));
-
+            ArgumentNullException.ThrowIfNull(customer);
+            ArgumentNullException.ThrowIfNull(credential);
             try
             {
-                using (var scope = serviceProvider.CreateAsyncScope())
-                {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-                    dbContext.Registrations.AddAsync(customer);
-                    dbContext.Credentials.AddAsync(credential);
+                // await _db.Set<Registration>().AddAsync(customer);
+                // await _db.Set<Credential>().AddAsync(credential);
+                _db.Registrations.Add(customer);
+                _db.Credentials.Add(credential);
+                // Use the asynchronous version of SaveChanges
+                await _db.SaveChangesAsync();
+                // Update the CustomerKey if needed (optional depending on your logic)
+                return customer.CustomerKey;
 
-                    // Use the asynchronous version of SaveChanges
-                    await dbContext.SaveChangesAsync();
-
-                    // Update the CustomerKey if needed (optional depending on your logic)
-                    return customer.CustomerKey;
-                }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
+                Console.WriteLine(e);
                 throw;
             }
+          
         }
 
-        public int Register(Registration customer, Credential credential)
-        {
-            if (customer == null) throw new ArgumentNullException(nameof(customer));
-            if (credential == null) throw new ArgumentNullException(nameof(credential));
-
-            db.Registrations.Add(customer);
-            db.Credentials.Add(credential);
-
-            // Use the asynchronous version of SaveChanges
-            int result = db.SaveChanges();
-
-            // Update the CustomerKey if needed (optional depending on your logic)
-            customer.CustomerKey = result;
-
-            return result;
-        }
 
 
         //public async Task<AuthResponseDto?> Authenticate(CredentialDto model)

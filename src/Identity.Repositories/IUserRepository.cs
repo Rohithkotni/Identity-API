@@ -7,13 +7,10 @@ namespace Identity.Repositories
     public interface IUserRepository
     {
         public Task<int> RegisterAsync(Registration dto, Credential credential);
-        public int Register(Registration dto, Credential credential);
-
+        public bool GetByEmail(string email);
+        Task<CredentialDto> Authenticate(string dtoEmailAddress);
+        public Task<CustomerDto> GetCustomer(string emailAddress);
         public Task<AuthResponseDto> Login(CredentialDto credential);
 
-        public Task<CredentialDto> GetByEmail(string email);
-
-        public object GetById(int userId);
-        public Task<CustomerDto> GetCustomer(string emailAddress);
     }
 }

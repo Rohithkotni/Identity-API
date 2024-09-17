@@ -1,6 +1,4 @@
-﻿namespace Identity.Repositories
+﻿namespace Identity.Domain.ResponseDTOs
 {
-    public class CustomerDto
-    {
-    }
+    public record AuthCustomerDto(int CustomerKey,string FirstName,string LastName);
 }

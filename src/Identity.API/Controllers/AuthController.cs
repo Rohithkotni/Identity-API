@@ -1,5 +1,6 @@
 ﻿using Identity.Domain.Models;
 using Identity.Domain.RequestDTOs;
+using Identity.Domain.ResponseDTOs;
 using Identity.Services;
 using Microsoft.AspNetCore.Mvc;
 using Identity.Repositories;
@@ -15,48 +16,31 @@ public class AuthController(IUserRepository repository, JwtService jwtService) :
         {
             return BadRequest(new { message = "Email already exists!" });
         }
-        var user = new Registration
-        {
-            FirstName = body.FirstName,
-            LastName = body.LastName,
-            EmailAddress = body.EmailAddress,
-            PhoneNumber = body.PhoneNumber,
-            EmailOptIn = body.EmailOptIn,
-            TextOptIn = body.TextOptIn
-        };
-        var credential = new Credential
-        {
-            EmailAddress = body.EmailAddress,
-            Password = BCrypt.Net.BCrypt.HashPassword(body.NewPassword)
-        };
 
-        return Created("success", await repository.RegisterAsync(user,credential));
+        await repository.RegisterAsync(body);
+        return Ok("Account Created Successfully");
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(Credential dto)
-    {
-        var user = await repository.Authenticate(dto.EmailAddress);
 
-        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+    public async Task<IActionResult> Login([FromBody] CredentialDto dto)
+    {
+        var response = await repository.AuthenticateAsync(dto.EmailAddress,dto.Password);
+        
+        if(response==null)
         {
             return BadRequest(new { message = "Invalid Credentials" });
         }
-        var customer=await repository.GetCustomer(dto.EmailAddress);
-       // var jwt = jwtService.Generate();
-
-        // Response.Cookies.Append("jwt", jwt, new CookieOptions
-        // {
-        //     HttpOnly = true
-        // });
-
-        return Ok(new
+        
+        Response.Cookies.Append("jwt", response, new CookieOptions
         {
-            message = "success"
+            HttpOnly = true
         });
+
+        return Ok(new AuthResponseDto(dto.EmailAddress,response));
     }
 
-    [HttpGet("user")]
+  //  [HttpGet("user")]
     public IActionResult User()
     {
         try
@@ -77,7 +61,7 @@ public class AuthController(IUserRepository repository, JwtService jwtService) :
         }
     }
 
-    [HttpPost("logout")]
+   // [HttpPost("logout")]
     public IActionResult Logout()
     {
         Response.Cookies.Delete("jwt");

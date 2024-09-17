@@ -4,6 +4,7 @@ namespace Identity.Domain.Models
 {
     public class Credential
     {
+        public int CustomerKey { get; set; }
         public int EmailAddressId { get; set; }
         public string EmailAddress { get; set; }
         [JsonIgnore]

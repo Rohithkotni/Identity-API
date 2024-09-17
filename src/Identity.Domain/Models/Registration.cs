@@ -1,7 +1,10 @@
-﻿namespace Identity.Domain.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Identity.Domain.Models
 {
     public class Registration
     {
+        [Key]
         public int CustomerKey { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }

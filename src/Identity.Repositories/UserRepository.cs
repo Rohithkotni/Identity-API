@@ -4,54 +4,70 @@ using Identity.Domain.ResponseDTOs;
 using Identity.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Identity.Services;
+using Newtonsoft.Json;
 
 namespace Identity.Repositories
 {
-    public class UserRepository(DataContext db) : IUserRepository
+    public class UserRepository(DataContext db, IMapper mapper, JwtService jwtService) : IUserRepository
     {
-        private readonly DataContext _db = db;
-
         public bool GetByEmail(string email)
         {
-            return _db.Registrations.Any(x => x.EmailAddress == email);
+            return db.Registrations.Any(x => x.EmailAddress == email);
         }
 
-        public async Task<CustomerDto> GetCustomer(string emailAddress)
+        public async Task<AuthCustomerDto> GetCustomer(string emailAddress)
         {
-            var results = await _db.Registrations.Where(x => x.EmailAddress == emailAddress).FirstOrDefaultAsync();
-            return Mapper.Map<CustomerDto>(results);
+            var results = await db.Registrations.Where(x => x.EmailAddress == emailAddress).FirstOrDefaultAsync();
+           var r= mapper.Map<AuthCustomerDto>(results);
+           return r;
         }
 
-        public async Task<CredentialDto> Authenticate(string dtoEmailAddress)
+        public async Task<string> AuthenticateAsync(string dtoEmailAddress,string password)
         {
-           var result =await _db.Credentials.Where(x => x.EmailAddress == dtoEmailAddress).FirstOrDefaultAsync();
-           var customer = new CredentialDto()
+          var user =await db.Credentials.Where(x => x.EmailAddress == dtoEmailAddress).FirstOrDefaultAsync();
+          
+           if (user != null)
            {
-               EmailAddress = result.EmailAddress,
-               Password = result.Password
-           };
-           return customer;
+               if (!BCrypt.Net.BCrypt.Verify(password, user?.Password))
+               {
+                   return null;
+               }
+               var customer =await db.Registrations.Where(x => x.EmailAddress == dtoEmailAddress).FirstOrDefaultAsync();
+              var info= JsonConvert.SerializeObject(customer);
+               var jwt = jwtService.Generate(info);
+               return jwt;
+           }
+
+           return null;
         }
 
-        public Task<AuthResponseDto> Login(CredentialDto credential)
+        public async Task<int> RegisterAsync(RegistrationDto body)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<int> RegisterAsync(Registration customer, Credential credential)
-        {
-            ArgumentNullException.ThrowIfNull(customer);
-            ArgumentNullException.ThrowIfNull(credential);
+            ArgumentNullException.ThrowIfNull(body);
+            var user = new Registration
+            {
+                FirstName = body.FirstName,
+                LastName = body.LastName,
+                EmailAddress = body.EmailAddress,
+                PhoneNumber = body.PhoneNumber,
+                EmailOptIn = body.EmailOptIn,
+                TextOptIn = body.TextOptIn
+            };
+            var credential = new Credential
+            {
+                EmailAddress = body.EmailAddress,
+                Password = BCrypt.Net.BCrypt.HashPassword(body.NewPassword)
+            };
             try
             {
-                // await _db.Set<Registration>().AddAsync(customer);
-                // await _db.Set<Credential>().AddAsync(credential);
-                _db.Registrations.Add(customer);
-                _db.Credentials.Add(credential);
-                // Use the asynchronous version of SaveChanges
-                await _db.SaveChangesAsync();
+                db.Registrations.Add(user);
+                await db.SaveChangesAsync();
+                credential.CustomerKey=user.CustomerKey;
+                db.Credentials.Add(credential);
+                await db.SaveChangesAsync();
                 // Update the CustomerKey if needed (optional depending on your logic)
-                return customer.CustomerKey;
+                return user.CustomerKey;
 
             }
             catch (Exception e)

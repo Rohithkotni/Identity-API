@@ -19,14 +19,15 @@ namespace Identity.Infrastructure
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Registration>().HasKey(x => x.CustomerKey);
+            // modelBuilder.Entity<Registration>().HasKey(x => x.CustomerKey);
             modelBuilder.Entity<Credential>().HasKey(x => x.EmailAddressId);
-            modelBuilder.Entity<Registration>(entity => { entity.HasIndex(e => e.EmailAddress).IsUnique(); });
+            modelBuilder.Entity<Registration>().Property(x=>x.CustomerKey).ValueGeneratedOnAdd();
         }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken =
+        /*public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken =
           default)
         {
+            
             // Define key generation logic for entities
             var keyGenerators = new Dictionary<Type,
               Action<object>> {
@@ -63,7 +64,7 @@ namespace Identity.Infrastructure
             }
 
             return await base.SaveChangesAsync(cancellationToken);
-        }
+        }*/
 
         private int GetNextSequentialCustomerId()
         {

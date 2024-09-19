@@ -14,7 +14,11 @@ namespace Identity.Domain.RequestDTOs
         [Required]
         [DataMember(Name = "lastName")]
         public string LastName { get; set; }
-
+        
+        [Required]
+        [DataMember(Name = "emailAddress")]
+        public string EmailAddress { get; set; }
+        
         [Required]
         [DataMember(Name = "newPassword")]
         public string NewPassword { get; set; }
@@ -22,10 +26,6 @@ namespace Identity.Domain.RequestDTOs
         [Required]
         [DataMember(Name = "confirmPassword")]
         public string ConfirmPassword { get; set; }
-
-        [Required]
-        [DataMember(Name = "emailAddress")]
-        public string EmailAddress { get; set; }
 
         [Required]
         [DataMember(Name = "phoneNumber")]

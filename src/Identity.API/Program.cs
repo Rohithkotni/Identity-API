@@ -1,6 +1,7 @@
 using Identity.Repositories;
-using Identity.Services;
+using Identity.Services.Jwt;
 using Identity.API.DependencyInjection;
+using Identity.Services.Mail;
 using Microsoft.OpenApi.Models;
 using MappingProfile = Identity.Repositories.MappingProfile;
 using Swashbuckle.AspNetCore.Filters;
@@ -28,8 +29,11 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IUserRepository,UserRepository>();
+builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddScoped<JwtService>();
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+
     
 var app = builder.Build();
 

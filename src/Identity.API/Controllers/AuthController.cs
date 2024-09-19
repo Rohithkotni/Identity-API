@@ -1,7 +1,7 @@
 ﻿using Identity.Domain.Models;
 using Identity.Domain.RequestDTOs;
 using Identity.Domain.ResponseDTOs;
-using Identity.Services;
+using Identity.Services.Jwt;
 using Microsoft.AspNetCore.Mvc;
 using Identity.Repositories;
 

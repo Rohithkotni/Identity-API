@@ -4,12 +4,13 @@ using Identity.Domain.ResponseDTOs;
 using Identity.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using Identity.Services;
+using Identity.Services.Jwt;
+using Identity.Services.Mail;
 using Newtonsoft.Json;
 
 namespace Identity.Repositories
 {
-    public class UserRepository(DataContext db, IMapper mapper, JwtService jwtService) : IUserRepository
+    public class UserRepository(DataContext db, IMapper mapper, JwtService jwtService,IMailService mailService) : IUserRepository
     {
         public bool GetByEmail(string email)
         {
@@ -21,6 +22,37 @@ namespace Identity.Repositories
             var results = await db.Registrations.Where(x => x.EmailAddress == emailAddress).FirstOrDefaultAsync();
            var r= mapper.Map<AuthCustomerDto>(results);
            return r;
+        }
+
+        public async Task<string> UpdateCustomerAsync(int customerKey,UpdateCustomerDto updatedPayload)
+        {
+            var user = await db.Registrations.Where(x => x.CustomerKey==customerKey).FirstOrDefaultAsync();
+            
+            if (user == null)
+            {
+                throw new KeyNotFoundException("Customer not found");
+            }
+
+            // Get properties of the UpdateEntityDto
+            var properties = typeof(UpdateCustomerDto).GetProperties();
+        
+            foreach (var prop in properties)
+            {
+                var newValue = prop.GetValue(updatedPayload);
+                if (newValue != null && !string.Equals(newValue as string, "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Find the corresponding property on the existing entity
+                    var existingProp = typeof(Registration).GetProperty(prop.Name);
+                    if (existingProp != null && existingProp.CanWrite)
+                    {
+                        existingProp.SetValue(user, newValue);
+                    }
+                }
+            }
+
+            // Save changes to the database
+            await db.SaveChangesAsync();
+            return "success";
         }
 
         public async Task<string> AuthenticateAsync(string dtoEmailAddress,string password)
@@ -67,6 +99,10 @@ namespace Identity.Repositories
                 db.Credentials.Add(credential);
                 await db.SaveChangesAsync();
                 // Update the CustomerKey if needed (optional depending on your logic)
+                await mailService.SendEmailAsync(user.EmailAddress,"Welcome to .Net Blog",
+                    $"Hello Mr.{user.FirstName} {user.LastName}!, \n nice to meet you! This is a Test email generated as part of the API Integration Testing. \n Thank you for your cooperation"
+                               
+                );
                 return user.CustomerKey;
 
             }
@@ -78,53 +114,5 @@ namespace Identity.Repositories
           
         }
 
-
-
-        //public async Task<AuthResponseDto?> Authenticate(CredentialDto model)
-        //{
-        //    var user = await db.Credentials.SingleOrDefaultAsync(x => x.EmailAddress == model.EmailAddress && x.Password == model.Password);
-
-        //    // return null if user not found
-        //    if (user == null) return null;
-
-        //    // authentication successful so generate jwt token
-        //    var token = await generateJwtToken(user);
-
-        //    return new AuthResponseDto(user.EmailAddress,token);
-        //}
-
-        //public async Task<IEnumerable<User>> GetAll()
-        //{
-        //    return await db.Users.Where(x => x.isActive == true).ToListAsync();
-        //}
-
-        //public async Task<User?> GetById(int id)
-        //{
-        //    return await db.Users.FirstOrDefaultAsync(x => x.Id == id);
-        //}
-
-        //public async Task<User?> AddAndUpdateUser(User userObj)
-        //{
-        //    bool isSuccess = false;
-        //    if (userObj.Id > 0)
-        //    {
-        //        var obj = await db.Users.FirstOrDefaultAsync(c => c.Id == userObj.Id);
-        //        if (obj != null)
-        //        {
-        //            // obj.Address = userObj.Address;
-        //            obj.FirstName = userObj.FirstName;
-        //            obj.LastName = userObj.LastName;
-        //            db.Users.Update(obj);
-        //            isSuccess = await db.SaveChangesAsync() > 0;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        await db.Users.AddAsync(userObj);
-        //        isSuccess = await db.SaveChangesAsync() > 0;
-        //    }
-
-        //    return isSuccess ? userObj : null;
-        //}
     }
 }

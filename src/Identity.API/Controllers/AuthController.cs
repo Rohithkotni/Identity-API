@@ -7,7 +7,7 @@ using Identity.Repositories;
 
 namespace Identity.API.Controllers;
 
-public class AuthController(IUserRepository repository, JwtService jwtService) : Controller
+public class AuthController(IUserRepository repository, JwtService jwtService,ILogger<AuthController> logger) : Controller
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationDto body)
@@ -18,6 +18,7 @@ public class AuthController(IUserRepository repository, JwtService jwtService) :
         }
 
         await repository.RegisterAsync(body);
+        logger.LogInformation("Registration is successful.");
         return Ok("Account Created Successfully");
     }
 
@@ -74,6 +75,11 @@ public class AuthController(IUserRepository repository, JwtService jwtService) :
 
     public bool IsExistingUser(string email)
     {
-        return repository.GetByEmail(email);
+        if (!string.Equals(email as string, "string", StringComparison.OrdinalIgnoreCase))
+        {
+            return repository.GetByEmail(email);
+        }
+        else 
+            return false;
     }
 }

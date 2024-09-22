@@ -6,11 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using Identity.Services.Jwt;
 using Identity.Services.Mail;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Identity.Repositories
 {
-    public class UserRepository(DataContext db, IMapper mapper, JwtService jwtService,IMailService mailService) : IUserRepository
+    public class UserRepository(DataContext db, IMapper mapper, JwtService jwtService,IMailService mailService,ILogger<UserRepository> logger) : IUserRepository
     {
         public bool GetByEmail(string email)
         {
@@ -30,6 +31,7 @@ namespace Identity.Repositories
             
             if (user == null)
             {
+                logger.LogError($"User {customerKey} not found");
                 throw new KeyNotFoundException("Customer not found");
             }
 
@@ -52,6 +54,7 @@ namespace Identity.Repositories
 
             // Save changes to the database
             await db.SaveChangesAsync();
+            logger.LogInformation($"User {customerKey} updated");
             return "success";
         }
 
@@ -98,11 +101,10 @@ namespace Identity.Repositories
                 credential.CustomerKey=user.CustomerKey;
                 db.Credentials.Add(credential);
                 await db.SaveChangesAsync();
-                // Update the CustomerKey if needed (optional depending on your logic)
-                await mailService.SendEmailAsync(user.EmailAddress,"Welcome to .Net Blog",
-                    $"Hello Mr.{user.FirstName} {user.LastName}!, \n nice to meet you! This is a Test email generated as part of the API Integration Testing. \n Thank you for your cooperation"
-                               
-                );
+                logger.LogInformation($"User {user.EmailAddress} registered");
+                
+               // await mailService.SendEmailAsync(user.EmailAddress,"Welcome to .Net Blog",user.FirstName);
+                
                 return user.CustomerKey;
 
             }

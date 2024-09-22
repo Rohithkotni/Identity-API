@@ -1,6 +1,7 @@
 ﻿using Identity.Domain.Models;
 using Identity.Domain.RequestDTOs;
 using Identity.Domain.ResponseDTOs;
+using Microsoft.Extensions.Logging;
 
 namespace Identity.Repositories
 {

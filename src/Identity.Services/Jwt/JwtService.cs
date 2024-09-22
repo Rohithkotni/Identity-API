@@ -1,13 +1,14 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Identity.Services.Jwt
 {
-    public class JwtService
+    public class JwtService(IOptions<JwtSettings> options)
     {
-        private string secureKey = "aAdaZRzW9wjr8hIpSH3M6/I1IY2NtFir+r67pGDiBnY=";
+        private string secureKey = options.Value.Key;
 
         public string Generate(string customerInfo)
         {

@@ -10,6 +10,7 @@
     <PackageReference Include="MailKit" Version="4.7.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="RestSharp" Version="112.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
   </ItemGroup>
@@ -17,5 +18,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Identity.Domain\Identity.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Mail\MailTemplate.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
 </Project>

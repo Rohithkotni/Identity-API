@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace Identity.API.Controllers;
 
-public class EmailController(IMailService mailService) : Controller
+public class EmailController(IMailService mailService,ILogger<EmailController> logger) : Controller
 {
     // GET
    // [Authorize]
@@ -25,6 +25,7 @@ public class EmailController(IMailService mailService) : Controller
 
         if (result.Contains("Failed"))
         {
+            logger.LogError(result);
             return StatusCode(500, result);
         }
         return Ok(result);

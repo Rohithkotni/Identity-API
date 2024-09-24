@@ -12,6 +12,10 @@ public class AuthController(IUserRepository repository, JwtService jwtService,IL
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationDto body)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
         if (IsExistingUser(body.EmailAddress))
         {
             return BadRequest(new { message = "Email already exists!" });

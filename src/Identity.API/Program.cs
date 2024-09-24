@@ -1,6 +1,8 @@
+using FluentValidation.AspNetCore;
 using Identity.Repositories;
 using Identity.Services.Jwt;
 using Identity.API.DependencyInjection;
+using Identity.Domain.Validators;
 using Identity.Services.Mail;
 using Microsoft.OpenApi.Models;
 using MappingProfile = Identity.Repositories.MappingProfile;
@@ -12,7 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddDatabases(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddFluentValidation(fv => 
+    fv.RegisterValidatorsFromAssemblyContaining<RegistrationValidator>());;
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
